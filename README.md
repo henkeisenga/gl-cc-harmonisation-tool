@@ -145,7 +145,7 @@ logs/           # Log files
 flowchart LR
     A[Excel Input GL/CC] --> B[Load + Normalize]
     B --> C[Schema Validation]
-    C --> D[Canonical Key (DESC_KEY)]
+    C --> D["Canonical Key (DESC_KEY)"]
     D --> E[Filtering]
     E --> F[Presence Matrix]
     F --> G[Actions (Create / Review)]

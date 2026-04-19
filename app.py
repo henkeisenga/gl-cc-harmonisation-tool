@@ -7,21 +7,22 @@ import sys
 
 import yaml
 from pydantic import ValidationError
+
 from config import Config, create_config, load_yaml_config
 from core import (
-    run_pipeline,
-    load_gl,
-    filter_gl,
-    gl_presence,
-    gl_actions,
-    gl_number_mismatches,
-    gl_type_mismatches,
-    load_cc,
-    filter_cc,
-    cc_presence,
     cc_actions,
     cc_number_mismatches,
+    cc_presence,
     cc_type_mismatches,
+    filter_cc,
+    filter_gl,
+    gl_actions,
+    gl_number_mismatches,
+    gl_presence,
+    gl_type_mismatches,
+    load_cc,
+    load_gl,
+    run_pipeline,
 )
 from merge import plan_merge_from_cleaned
 
@@ -141,7 +142,7 @@ def main() -> None:
 
     if args.merge_spec:
         try:
-            with open(args.merge_spec, "r", encoding="utf-8") as f:
+            with open(args.merge_spec, encoding="utf-8") as f:
                 merge_spec = yaml.safe_load(f) or {}
             if not isinstance(merge_spec, dict):
                 raise ValueError("merge-spec moet een mapping/dict zijn")

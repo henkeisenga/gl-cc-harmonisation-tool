@@ -9,9 +9,9 @@ Adds:
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 try:
     import yaml  # type: ignore
@@ -43,17 +43,17 @@ class ConfigModel(BaseModel):
     log_file_cc: str = Field(default="cc_log.txt", min_length=1)
     log_level: str = Field(default="INFO")
 
-    filter_fislib: List[str] = Field(default_factory=list)
-    filter_companies: List[str] = Field(default_factory=list)
+    filter_fislib: list[str] = Field(default_factory=list)
+    filter_companies: list[str] = Field(default_factory=list)
     filter_doortrek: bool = True
     filter_verdrek: bool = True
-    lastused_days: Optional[int] = Field(default=None, ge=1)
+    lastused_days: int | None = Field(default=None, ge=1)
 
     excel_engine: str = Field(default="xlsxwriter")
     dry_run: bool = False
     verbose: bool = False
 
-    sheet_names_gl: Dict[str, str] = Field(
+    sheet_names_gl: dict[str, str] = Field(
         default_factory=lambda: {
             "Summary": "GL_RunSummary",
             "Cleaned Data": "GL_Cleaned",
@@ -68,7 +68,7 @@ class ConfigModel(BaseModel):
             "Config": "GL_Config",
         }
     )
-    sheet_names_cc: Dict[str, str] = Field(
+    sheet_names_cc: dict[str, str] = Field(
         default_factory=lambda: {
             "Summary": "CC_RunSummary",
             "Cleaned Data": "CC_Cleaned",
@@ -103,7 +103,7 @@ class ConfigModel(BaseModel):
 
     @field_validator("filter_fislib", "filter_companies")
     @classmethod
-    def _list_of_str(cls, v: List[str]) -> List[str]:
+    def _list_of_str(cls, v: list[str]) -> list[str]:
         return [str(x) for x in v]
 
 
@@ -128,17 +128,17 @@ class Config:
     log_file_cc: str = "cc_log.txt"
     log_level: str = "INFO"
 
-    filter_fislib: List[str] = field(default_factory=list)
-    filter_companies: List[str] = field(default_factory=list)
+    filter_fislib: list[str] = field(default_factory=list)
+    filter_companies: list[str] = field(default_factory=list)
     filter_doortrek: bool = True
     filter_verdrek: bool = True
-    lastused_days: Optional[int] = None
+    lastused_days: int | None = None
 
     excel_engine: str = "xlsxwriter"
     dry_run: bool = False
     verbose: bool = False
 
-    sheet_names_gl: Dict[str, str] = field(
+    sheet_names_gl: dict[str, str] = field(
         default_factory=lambda: {
             "Summary": "GL_RunSummary",
             "Cleaned Data": "GL_Cleaned",
@@ -153,7 +153,7 @@ class Config:
             "Config": "GL_Config",
         }
     )
-    sheet_names_cc: Dict[str, str] = field(
+    sheet_names_cc: dict[str, str] = field(
         default_factory=lambda: {
             "Summary": "CC_RunSummary",
             "Cleaned Data": "CC_Cleaned",
@@ -169,14 +169,14 @@ class Config:
         }
     )
 
-    def init_dirs(self, timestamp: Optional[str] = None) -> None:
+    def init_dirs(self, timestamp: str | None = None) -> None:
         ts = timestamp or datetime.now().strftime("%Y%m%d_%H%M%S")
         self.output_dir = os.path.join(self.base_output_dir, ts)
         self.log_dir = os.path.join(self.base_log_dir, ts)
         os.makedirs(self.output_dir, exist_ok=True)
         os.makedirs(self.log_dir, exist_ok=True)
 
-    def update_from_mapping(self, m: Dict[str, Any]) -> None:
+    def update_from_mapping(self, m: dict[str, Any]) -> None:
         """Apply overrides via Pydantic validation (safe & typed)."""
         if not m:
             return
@@ -189,12 +189,12 @@ class Config:
         for name, value in validated.model_dump().items():
             setattr(self, name, value)
 
-    def as_dict(self) -> Dict[str, Any]:
+    def as_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
 def create_config(
-    initial: Optional[Dict[str, Any]] = None, *, init_runtime_dirs: bool = False
+    initial: dict[str, Any] | None = None, *, init_runtime_dirs: bool = False
 ) -> Config:
     cfg = Config()
     if initial:
@@ -209,8 +209,8 @@ config = create_config(init_runtime_dirs=False)
 
 
 def load_yaml_config(
-    path: Optional[str], base_config: Optional[Config] = None
-) -> Dict[str, Any]:
+    path: str | None, base_config: Config | None = None
+) -> dict[str, Any]:
     """Load YAML configuration file into a dict ({} if no path)."""
     if not path:
         return {}
@@ -223,7 +223,7 @@ def load_yaml_config(
 
     runtime_cfg = base_config if base_config is not None else Config()
 
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         data = yaml.safe_load(f) or {}
         if not isinstance(data, dict):
             raise ValueError("YAML-config moet een mapping (dict) zijn.")

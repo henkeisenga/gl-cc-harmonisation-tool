@@ -12,20 +12,20 @@ import logging
 import os
 import re
 import unicodedata
+from collections.abc import Callable
 from dataclasses import asdict
 from datetime import datetime, timedelta
-from typing import Callable, Dict, Optional, Tuple
 
 import pandas as pd
 
 # --- Prefer the pandas-backend import; fallback to legacy import if unavailable ---
 try:
     import pandera.pandas as pa  # recommended
-    from pandera.pandas import Column, Check
+    from pandera.pandas import Check, Column
 except Exception:
     try:
         import pandera as pa  # type: ignore
-        from pandera import Column, Check  # type: ignore
+        from pandera import Check, Column  # type: ignore
     except Exception:  # pragma: no cover
 
         class _DummySchemaErrors(Exception):
@@ -64,10 +64,10 @@ DataFrame = pd.DataFrame
 Series = pd.Series
 
 FilterFunc = Callable[
-    [DataFrame, logging.Logger, Config], Tuple[DataFrame, DataFrame, Dict[str, int]]
+    [DataFrame, logging.Logger, Config], tuple[DataFrame, DataFrame, dict[str, int]]
 ]
 PresenceFunc = Callable[
-    [DataFrame, logging.Logger, Config], Tuple[DataFrame, DataFrame]
+    [DataFrame, logging.Logger, Config], tuple[DataFrame, DataFrame]
 ]
 ActionFunc = Callable[[DataFrame, DataFrame, logging.Logger, Config], DataFrame]
 MismatchFunc = Callable[[DataFrame], DataFrame]
@@ -131,7 +131,7 @@ CC_SCHEMA = pa.DataFrameSchema(
 
 
 # ---------------------------- Logging ----------------------------------------
-def _cfg(cfg: Optional[Config]) -> Config:
+def _cfg(cfg: Config | None) -> Config:
     if cfg is None:
         raise ValueError("cfg is verplicht")
     return cfg
@@ -298,7 +298,10 @@ def load_gl(logger: logging.Logger, cfg: Config) -> DataFrame:
     try:
         df = GL_SCHEMA.validate(df, lazy=True)
     except pa.errors.SchemaErrors as e:
-        msg = f"GL schema validation failed with {len(e.failure_cases)} errors. Top rows:\n{e.failure_cases.head(10)}"
+        msg = (
+            f"GL schema validation failed with {len(e.failure_cases)} errors. "
+            f"Top rows:\n{e.failure_cases.head(10)}"
+        )
         logger.error(msg)
         raise
 
@@ -327,7 +330,10 @@ def load_cc(logger: logging.Logger, cfg: Config) -> DataFrame:
     try:
         df = CC_SCHEMA.validate(df, lazy=True)
     except pa.errors.SchemaErrors as e:
-        msg = f"CC schema validation failed with {len(e.failure_cases)} errors. Top rows:\n{e.failure_cases.head(10)}"
+        msg = (
+            f"CC schema validation failed with {len(e.failure_cases)} errors. "
+            f"Top rows:\n{e.failure_cases.head(10)}"
+        )
         logger.error(msg)
         raise
 
@@ -371,7 +377,7 @@ def _apply_common_filters(df: DataFrame, cfg: Config) -> Series:
 
 def filter_gl(
     df: DataFrame, logger: logging.Logger, cfg: Config
-) -> Tuple[DataFrame, DataFrame, Dict[str, int]]:
+) -> tuple[DataFrame, DataFrame, dict[str, int]]:
     runtime_cfg = _cfg(cfg)
     log_step(logger, "Filtering GL data ...", runtime_cfg)
     m = pd.Series(True, index=df.index)
@@ -406,7 +412,7 @@ def filter_gl(
 
 def filter_cc(
     df: DataFrame, logger: logging.Logger, cfg: Config
-) -> Tuple[DataFrame, DataFrame, Dict[str, int]]:
+) -> tuple[DataFrame, DataFrame, dict[str, int]]:
     runtime_cfg = _cfg(cfg)
     log_step(logger, "Filtering CC data ...", runtime_cfg)
     keep = _apply_common_filters(df, runtime_cfg)
@@ -424,7 +430,7 @@ def filter_cc(
 # ---------------------------- Presence ----------------------------------------
 def gl_presence(
     df: DataFrame, logger: logging.Logger, cfg: Config
-) -> Tuple[DataFrame, DataFrame]:
+) -> tuple[DataFrame, DataFrame]:
     log_step(logger, "Building GL presence matrices ...", cfg)
     display_descr = (
         df.groupby("DESC_KEY", as_index=True)["DESCRIPTION"]
@@ -458,7 +464,7 @@ def gl_presence(
 
 def cc_presence(
     df: DataFrame, logger: logging.Logger, cfg: Config
-) -> Tuple[DataFrame, DataFrame]:
+) -> tuple[DataFrame, DataFrame]:
     log_step(logger, "Building CC presence matrices ...", cfg)
     display_descr = (
         df.groupby("DESC_KEY", as_index=True)["DESCRIPTION"]
@@ -781,7 +787,7 @@ def cc_type_mismatches(_: DataFrame) -> DataFrame:
 
 
 # ---------------------------- Export helpers ---------------------------------
-def _filter_summary(counts: Dict[str, int]) -> DataFrame:
+def _filter_summary(counts: dict[str, int]) -> DataFrame:
     return pd.DataFrame(list(counts.items()), columns=["Filter", "Count"])
 
 
@@ -794,7 +800,7 @@ def _config_df(component: str, cfg: Config) -> DataFrame:
 
 def _summary_df(
     component: str,
-    counts: Dict[str, int],
+    counts: dict[str, int],
     pres_bin: DataFrame,
     actions: DataFrame,
     num_ms: DataFrame,
@@ -842,7 +848,7 @@ def export_excel(
     component: str,
     cleaned: DataFrame,
     filtered: DataFrame,
-    counts: Dict[str, int],
+    counts: dict[str, int],
     pres_bin: DataFrame,
     pres_enr: DataFrame,
     actions: DataFrame,
@@ -915,7 +921,7 @@ def export_excel(
 def _log_summary(
     component: str,
     logger: logging.Logger,
-    counts: Dict[str, int],
+    counts: dict[str, int],
     pres_bin: DataFrame,
     actions: DataFrame,
     num_ms: DataFrame,
@@ -963,7 +969,7 @@ def run_pipeline(
     type_mismatch_func: MismatchFunc,
     log_filename: str,
     cfg: Config,
-) -> Dict[str, object]:
+) -> dict[str, object]:
     runtime_cfg = _cfg(cfg)
     logger = _new_logger(component, log_filename, runtime_cfg)
     log_step(logger, f"Start {component}", runtime_cfg)

@@ -1,7 +1,10 @@
+import argparse
 from argparse import Namespace
 
+import pytest
+
 from app import apply_yaml_and_cli
-from config import Config
+from config import Config, create_config
 
 
 def test_apply_cli_overrides_basic():
@@ -32,15 +35,14 @@ def test_apply_cli_overrides_basic():
 
 
 def test_apply_yaml_invalid_path_raises():
-    cfg = Config()
-    args = Namespace(
+    cfg = create_config(init_runtime_dirs=False)
+    args = argparse.Namespace(
         config="does_not_exist.yaml",
         dry_run=False,
         verbose=False,
         lastused_days=None,
         fislib=None,
         companies=None,
-        input_file=None,
         input_file_gl=None,
         input_file_cc=None,
         sheet_gl=None,
@@ -48,8 +50,5 @@ def test_apply_yaml_invalid_path_raises():
         merge_spec=None,
     )
 
-    try:
+    with pytest.raises(FileNotFoundError):
         apply_yaml_and_cli(args, cfg)
-        assert False, "Expected FileNotFoundError"
-    except FileNotFoundError:
-        pass

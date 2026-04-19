@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import os
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
 from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
@@ -30,18 +29,18 @@ class EnvModel(BaseModel):
 
 
 class MergeSpec(BaseModel):
-    sources: List[EnvModel] = Field(..., description="Bron-ENV's (DATALIB-COMPANY)")
+    sources: list[EnvModel] = Field(..., description="Bron-ENV's (DATALIB-COMPANY)")
     target: EnvModel = Field(..., description="Doel-ENV (DATALIB-COMPANY)")
-    scope: List[str] = Field(default_factory=lambda: ["GL", "CC"])
+    scope: list[str] = Field(default_factory=lambda: ["GL", "CC"])
     numbering_strategy: str = Field(default="keep_preferred")
-    preferred_env: Optional[str] = Field(
+    preferred_env: str | None = Field(
         default=None,
         description="ENV-string DATALIB-COMPANY, alleen voor keep_preferred",
     )
 
     @field_validator("scope")
     @classmethod
-    def _scope_ok(cls, v: List[str]) -> List[str]:
+    def _scope_ok(cls, v: list[str]) -> list[str]:
         allowed = {"GL", "CC"}
         vv = [s.strip().upper() for s in v]
         for s in vv:
@@ -59,7 +58,7 @@ class MergeSpec(BaseModel):
         return vv
 
     @model_validator(mode="after")
-    def _validate_preferred_env(self) -> "MergeSpec":
+    def _validate_preferred_env(self) -> MergeSpec:
         if self.numbering_strategy == "keep_preferred" and not self.preferred_env:
             raise ValueError(
                 "preferred_env is verplicht wanneer numbering_strategy='keep_preferred'"
@@ -67,7 +66,7 @@ class MergeSpec(BaseModel):
         return self
 
 
-def _cfg(cfg: Optional[Config]) -> Config:
+def _cfg(cfg: Config | None) -> Config:
     if cfg is None:
         raise ValueError("cfg is verplicht")
     return cfg
@@ -77,8 +76,8 @@ def _pick_number(
     grp: DataFrame,
     col_number: str,
     strategy: str,
-    preferred_env: Optional[str],
-) -> Tuple[Optional[object], str]:
+    preferred_env: str | None,
+) -> tuple[object | None, str]:
     nums = grp[col_number].dropna().tolist()
     if not nums:
         return None, "no_number"
@@ -100,7 +99,7 @@ def _pick_number(
     return grp[col_number].dropna().iloc[0], "first"
 
 
-def _first_nonnull(s: pd.Series) -> Optional[str]:
+def _first_nonnull(s: pd.Series) -> str | None:
     x = s.dropna()
     return x.iloc[0] if not x.empty else None
 
@@ -144,14 +143,14 @@ def _target_collision_reason(
 
 def _build_unified_gl(
     df_gl: DataFrame, spec: MergeSpec
-) -> Tuple[DataFrame, DataFrame, DataFrame]:
+) -> tuple[DataFrame, DataFrame, DataFrame]:
     src_envs = {e.env for e in spec.sources}
     df = df_gl[df_gl["ENV"].isin(src_envs)].copy()
     if df.empty:
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
-    records: List[Dict[str, object]] = []
-    conflicts: List[Dict[str, object]] = []
+    records: list[dict[str, object]] = []
+    conflicts: list[dict[str, object]] = []
 
     for desc_key, grp in df.groupby("DESC_KEY", sort=True):
         display_descr = _first_nonnull(grp["DESCRIPTION"]) or str(desc_key)
@@ -313,14 +312,14 @@ def _build_mappings_gl(
 
 def _build_unified_cc(
     df_cc: DataFrame, spec: MergeSpec
-) -> Tuple[DataFrame, DataFrame, DataFrame]:
+) -> tuple[DataFrame, DataFrame, DataFrame]:
     src_envs = {e.env for e in spec.sources}
     df = df_cc[df_cc["ENV"].isin(src_envs)].copy()
     if df.empty:
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
-    records: List[Dict[str, object]] = []
-    conflicts: List[Dict[str, object]] = []
+    records: list[dict[str, object]] = []
+    conflicts: list[dict[str, object]] = []
 
     for desc_key, grp in df.groupby("DESC_KEY", sort=True):
         display_descr = _first_nonnull(grp["DESCRIPTION"]) or str(desc_key)
@@ -555,7 +554,7 @@ def export_merge_plan(
 def plan_merge_from_cleaned(
     df_gl_clean: DataFrame,
     df_cc_clean: DataFrame,
-    merge_spec: Dict,
+    merge_spec: dict,
     cfg: Config,
 ) -> str:
     runtime_cfg = _cfg(cfg)
