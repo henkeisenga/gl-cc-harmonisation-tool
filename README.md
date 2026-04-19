@@ -143,18 +143,18 @@ logs/           # Log files
 
 ```mermaid
 flowchart LR
-    A[Excel Input GL/CC] --> B[Load + Normalize]
-    B --> C[Schema Validation]
+    A["Excel Input GL/CC"] --> B["Load + Normalize"]
+    B --> C["Schema Validation"]
     C --> D["Canonical Key (DESC_KEY)"]
-    D --> E[Filtering]
-    E --> F[Presence Matrix]
-    F --> G[Actions (Create / Review)]
-    G --> H[Mismatch Analysis]
-    H --> I[Excel Export]
+    D --> E["Filtering"]
+    E --> F["Presence Matrix"]
+    F --> G["Actions (Create / Review)"]
+    G --> H["Mismatch Analysis"]
+    H --> I["Excel Export"]
 
-    E --> J[Merge Planner]
-    J --> K[Unified Schema]
-    K --> L[Merge Plan Excel]
+    E --> J["Merge Planner"]
+    J --> K["Unified Schema"]
+    K --> L["Merge Plan Excel"]
 ```
 
 ---
@@ -162,6 +162,21 @@ flowchart LR
 ## 🔀 Merge
 
 The merge planner combines multiple source ENVs into a single unified structure.
+
+### Overview
+
+flowchart TD
+    A["Source ENVs"] --> B["Group by DESC_KEY"]
+    B --> C["Determine Canonical Number"]
+    C --> D["Build Unified Table"]
+
+    D --> E{"Exists in Target?"}
+    E -->|No| F["Create"]
+    E -->|Yes same| G["Keep"]
+    E -->|Yes different| H["Review"]
+
+    D --> I["Detect Collisions"]
+    I --> H
 
 ### Strategy options
 
