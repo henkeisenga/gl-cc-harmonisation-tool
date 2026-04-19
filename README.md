@@ -165,6 +165,7 @@ The merge planner combines multiple source ENVs into a single unified structure.
 
 ### Overview
 
+```mermaid
 flowchart TD
     A["Source ENVs"] --> B["Group by DESC_KEY"]
     B --> C["Determine Canonical Number"]
@@ -177,6 +178,7 @@ flowchart TD
 
     D --> I["Detect Collisions"]
     I --> H
+```
 
 ### Strategy options
 
