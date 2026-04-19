@@ -1,0 +1,16 @@
+###############################################################################
+# MERGE-SPEC – Binnen één DATALIB meerdere bedrijven -> nieuw bedrijf
+###############################################################################
+sources:
+  - datalib: TEST
+    bedrijf: "1"
+  - datalib: TEST
+    bedrijf: "2"
+
+target:
+  datalib: TEST-B
+  bedrijf: "99"   # nieuw samengevoegd bedrijf binnen dezelfde DATALIB
+
+scope: ["GL", "CC"]       # neem grootboek en kostenplaatsen mee
+numbering_strategy: keep_preferred
+preferred_env: "TEST-1"  # laat bedrijf 1 leidend zijn voor nummerkeuze

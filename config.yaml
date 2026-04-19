@@ -1,0 +1,19 @@
+# Paden
+input_file_gl: data/General_ledger_masterdata_demo.xlsx
+input_file_cc: data/Costcenter_masterdata_demo.xlsx
+sheet_gl: Accounts
+sheet_cc: CostCenters
+
+# Filters
+filter_fislib: []
+filter_companies: []
+filter_doortrek: true
+filter_verdrek: true
+lastused_days: 1000
+
+# Output/logging
+base_output_dir: output
+base_log_dir: logs
+log_level: INFO
+dry_run: false
+verbose: false

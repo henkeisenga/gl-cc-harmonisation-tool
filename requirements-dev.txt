@@ -1,0 +1,5 @@
+black>=24
+ruff>=0.15
+pytest>=9
+pytest-cov>=7
+coverage>=7
