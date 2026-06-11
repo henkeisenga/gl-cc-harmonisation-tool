@@ -295,7 +295,9 @@ def load_gl(logger: logging.Logger, cfg: Config) -> DataFrame:
     df = pd.read_excel(path, sheet_name=runtime_cfg.sheet_gl)
     df = _normalize_columns(df)
     if runtime_cfg.column_map_gl:
-        df = df.rename(columns={k.upper(): v.upper() for k, v in runtime_cfg.column_map_gl.items()})
+        df = df.rename(
+            columns={k.upper(): v.upper() for k, v in runtime_cfg.column_map_gl.items()}
+        )
 
     try:
         df = GL_SCHEMA.validate(df, lazy=True)
@@ -329,7 +331,9 @@ def load_cc(logger: logging.Logger, cfg: Config) -> DataFrame:
     df = pd.read_excel(path, sheet_name=runtime_cfg.sheet_cc)
     df = _normalize_columns(df)
     if runtime_cfg.column_map_cc:
-        df = df.rename(columns={k.upper(): v.upper() for k, v in runtime_cfg.column_map_cc.items()})
+        df = df.rename(
+            columns={k.upper(): v.upper() for k, v in runtime_cfg.column_map_cc.items()}
+        )
 
     try:
         df = CC_SCHEMA.validate(df, lazy=True)
@@ -583,7 +587,11 @@ def gl_actions(
 
     env_max = (
         df.dropna(subset=["ACCOUNT"])
-        .assign(_num=pd.to_numeric(df.loc[df["ACCOUNT"].notna(), "ACCOUNT"], errors="coerce"))
+        .assign(
+            _num=pd.to_numeric(
+                df.loc[df["ACCOUNT"].notna(), "ACCOUNT"], errors="coerce"
+            )
+        )
         .dropna(subset=["_num"])
         .groupby("ENV")["_num"]
         .max()
@@ -591,9 +599,8 @@ def gl_actions(
     )
     out = out.merge(env_max, on="ENV", how="left")
     out["Suggested_Number"] = pd.NA
-    out.loc[collision, "Suggested_Number"] = (
-        (out.loc[collision, "_env_max"] + 1)
-        .map(lambda x: _as_int_or_str_no_decimal(x) if pd.notna(x) else pd.NA)
+    out.loc[collision, "Suggested_Number"] = (out.loc[collision, "_env_max"] + 1).map(
+        lambda x: _as_int_or_str_no_decimal(x) if pd.notna(x) else pd.NA
     )
     out = out.drop(columns=["_env_max"])
 
@@ -720,7 +727,11 @@ def cc_actions(
 
     env_max = (
         df.dropna(subset=["COSTCENTER"])
-        .assign(_num=pd.to_numeric(df.loc[df["COSTCENTER"].notna(), "COSTCENTER"], errors="coerce"))
+        .assign(
+            _num=pd.to_numeric(
+                df.loc[df["COSTCENTER"].notna(), "COSTCENTER"], errors="coerce"
+            )
+        )
         .dropna(subset=["_num"])
         .groupby("ENV")["_num"]
         .max()
@@ -728,9 +739,8 @@ def cc_actions(
     )
     out = out.merge(env_max, on="ENV", how="left")
     out["Suggested_Number"] = pd.NA
-    out.loc[collision, "Suggested_Number"] = (
-        (out.loc[collision, "_env_max"] + 1)
-        .map(lambda x: _as_int_or_str_no_decimal(x) if pd.notna(x) else pd.NA)
+    out.loc[collision, "Suggested_Number"] = (out.loc[collision, "_env_max"] + 1).map(
+        lambda x: _as_int_or_str_no_decimal(x) if pd.notna(x) else pd.NA
     )
     out = out.drop(columns=["_env_max"])
 
@@ -787,13 +797,15 @@ def gl_number_mismatches(df: DataFrame) -> DataFrame:
     details = (
         df.dropna(subset=["ACCOUNT"])
         .assign(
-            ACCOUNT_FMT=lambda x: x["ACCOUNT"]
-            .map(_as_int_or_str_no_decimal)
-            .astype(str),
-            DETAIL=lambda x: x["ACCOUNT"].map(_as_int_or_str_no_decimal).astype(str)
-            + " ("
-            + x["ENV"].astype(str)
-            + ")",
+            ACCOUNT_FMT=lambda x: (
+                x["ACCOUNT"].map(_as_int_or_str_no_decimal).astype(str)
+            ),
+            DETAIL=lambda x: (
+                x["ACCOUNT"].map(_as_int_or_str_no_decimal).astype(str)
+                + " ("
+                + x["ENV"].astype(str)
+                + ")"
+            ),
         )
         .groupby("DESC_KEY", as_index=False)
         .agg(
@@ -820,9 +832,9 @@ def gl_type_mismatches(df: DataFrame) -> DataFrame:
         df2.dropna(subset=["TYPE"])
         .assign(
             TYPE_FMT=lambda x: x["TYPE"].astype("string").str.strip(),
-            DETAIL=lambda x: x["TYPE"].astype("string").str.strip()
-            + ": "
-            + x["ENV"].astype(str),
+            DETAIL=lambda x: (
+                x["TYPE"].astype("string").str.strip() + ": " + x["ENV"].astype(str)
+            ),
         )
         .groupby("DESC_KEY", as_index=False)
         .agg(
@@ -842,13 +854,15 @@ def cc_number_mismatches(df: DataFrame) -> DataFrame:
     details = (
         df.dropna(subset=["COSTCENTER"])
         .assign(
-            COSTCENTER_FMT=lambda x: x["COSTCENTER"]
-            .map(_as_int_or_str_no_decimal)
-            .astype(str),
-            DETAIL=lambda x: x["COSTCENTER"].map(_as_int_or_str_no_decimal).astype(str)
-            + " ("
-            + x["ENV"].astype(str)
-            + ")",
+            COSTCENTER_FMT=lambda x: (
+                x["COSTCENTER"].map(_as_int_or_str_no_decimal).astype(str)
+            ),
+            DETAIL=lambda x: (
+                x["COSTCENTER"].map(_as_int_or_str_no_decimal).astype(str)
+                + " ("
+                + x["ENV"].astype(str)
+                + ")"
+            ),
         )
         .groupby("DESC_KEY", as_index=False)
         .agg(

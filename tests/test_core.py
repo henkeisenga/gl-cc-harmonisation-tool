@@ -104,7 +104,9 @@ def test_gl_actions_collision_populates_conflicting_description(cfg):
 
     actions = gl_actions(df, bin_mat, _logger(), cfg)
 
-    collision_rows = actions[actions["Reason"] == "Nummer bestaat al in target voor andere omschrijving"]
+    collision_rows = actions[
+        actions["Reason"] == "Nummer bestaat al in target voor andere omschrijving"
+    ]
     assert not collision_rows.empty
     # "b" is missing from L1-1; account 1000 there belongs to "A"
     b_in_l1 = collision_rows[collision_rows["ENV"] == "L1-1"]
@@ -134,7 +136,9 @@ def test_gl_actions_aligned_action_text(cfg):
 
     actions = gl_actions(df, bin_mat, _logger(), cfg)
 
-    aligned_rows = actions[actions["Reason"] == "Nummer bestaat al in target voor dezelfde omschrijving"]
+    aligned_rows = actions[
+        actions["Reason"] == "Nummer bestaat al in target voor dezelfde omschrijving"
+    ]
     assert not aligned_rows.empty
     assert "Verify TYPE" in aligned_rows.iloc[0]["Action"]
 
