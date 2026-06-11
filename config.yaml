@@ -1,8 +1,23 @@
 # Paden
-input_file_gl: data/General_ledger_masterdata_demo.xlsx
-input_file_cc: data/Costcenter_masterdata_demo.xlsx
+input_file_gl: data/General_ledger_masterdata.xlsx
+input_file_cc: data/Costcenter_masterdata.xlsx
 sheet_gl: Accounts
 sheet_cc: CostCenters
+
+# Kolomnamen vertaling (bronbestand -> pipeline verwacht)
+column_map_gl:
+  BEDRIJF: COMPANY
+  GROOTBOEK: ACCOUNT
+  OMSCHRIJVING: DESCRIPTION
+  OMSCHRIJVING_LANG: DESCRIPTION_LANG
+  DATUM_LAATST_GEBRUIKT: LASTUSED_DATE
+
+column_map_cc:
+  BEDRIJF: COMPANY
+  KOSTENPLAATS: COSTCENTER
+  OMSCHRIJVING: DESCRIPTION
+  OMSCHRIJVING_LANG: DESCRIPTION_LANG
+  DATUM_LAATST_GEBRUIKT: LASTUSED_DATE
 
 # Filters
 filter_fislib: []

@@ -294,6 +294,8 @@ def load_gl(logger: logging.Logger, cfg: Config) -> DataFrame:
     )
     df = pd.read_excel(path, sheet_name=runtime_cfg.sheet_gl)
     df = _normalize_columns(df)
+    if runtime_cfg.column_map_gl:
+        df = df.rename(columns={k.upper(): v.upper() for k, v in runtime_cfg.column_map_gl.items()})
 
     try:
         df = GL_SCHEMA.validate(df, lazy=True)
@@ -326,6 +328,8 @@ def load_cc(logger: logging.Logger, cfg: Config) -> DataFrame:
     )
     df = pd.read_excel(path, sheet_name=runtime_cfg.sheet_cc)
     df = _normalize_columns(df)
+    if runtime_cfg.column_map_cc:
+        df = df.rename(columns={k.upper(): v.upper() for k, v in runtime_cfg.column_map_cc.items()})
 
     try:
         df = CC_SCHEMA.validate(df, lazy=True)
@@ -518,6 +522,8 @@ def gl_actions(
                 "DESCRIPTION_LANG",
                 "ACCOUNT",
                 "TYPE",
+                "Conflicting_Description",
+                "Suggested_Number",
                 "Action",
             ]
         )
@@ -545,7 +551,11 @@ def gl_actions(
     out = pres.merge(fallback, on="DESC_KEY", how="left")
     out[["DATALIB", "COMPANY"]] = out["ENV"].str.split("-", n=1, expand=True)
 
-    df_check = df[["ENV", "ACCOUNT", "DESC_KEY"]].dropna().drop_duplicates()
+    df_check = (
+        df[["ENV", "ACCOUNT", "DESC_KEY", "DESCRIPTION"]]
+        .dropna(subset=["ACCOUNT"])
+        .drop_duplicates()
+    )
     tmp = out.merge(
         df_check,
         left_on=["ENV", "Fallback_ACCOUNT"],
@@ -567,6 +577,27 @@ def gl_actions(
         "Nummer bestaat al in target voor andere omschrijving"
     )
 
+    out["Conflicting_Description"] = (
+        tmp["DESCRIPTION_TARGET"].where(collision, other="").fillna("").values
+    )
+
+    env_max = (
+        df.dropna(subset=["ACCOUNT"])
+        .assign(_num=pd.to_numeric(df.loc[df["ACCOUNT"].notna(), "ACCOUNT"], errors="coerce"))
+        .dropna(subset=["_num"])
+        .groupby("ENV")["_num"]
+        .max()
+        .rename("_env_max")
+    )
+    out = out.merge(env_max, on="ENV", how="left")
+    out["Suggested_Number"] = pd.NA
+    out.loc[collision, "Suggested_Number"] = (
+        (out.loc[collision, "_env_max"] + 1)
+        .map(lambda x: _as_int_or_str_no_decimal(x) if pd.notna(x) else pd.NA)
+    )
+    out = out.drop(columns=["_env_max"])
+
+    same_aligned = has_same_number & same_desc.fillna(False)
     out["Action"] = (
         out["ActionType"]
         + " in "
@@ -577,6 +608,15 @@ def gl_actions(
         + out["DESCRIPTION"].astype(str)
         + " and "
         + out["Fallback_LANG"].astype(str)
+    )
+    out.loc[same_aligned, "Action"] = (
+        "Verify TYPE in "
+        + out.loc[same_aligned, "ENV"]
+        + " — account "
+        + out.loc[same_aligned, "Fallback_ACCOUNT"].astype(str)
+        + " already exists for '"
+        + out.loc[same_aligned, "DESCRIPTION"].astype(str)
+        + "'"
     )
 
     out = out.rename(
@@ -600,6 +640,8 @@ def gl_actions(
             "DESCRIPTION_LANG",
             "ACCOUNT",
             "TYPE",
+            "Conflicting_Description",
+            "Suggested_Number",
             "Action",
         ]
     ]
@@ -623,6 +665,8 @@ def cc_actions(
                 "DESCRIPTION",
                 "DESCRIPTION_LANG",
                 "COSTCENTER",
+                "Conflicting_Description",
+                "Suggested_Number",
                 "Action",
             ]
         )
@@ -644,7 +688,11 @@ def cc_actions(
     out = pres.merge(fallback, on="DESC_KEY", how="left")
     out[["DATALIB", "COMPANY"]] = out["ENV"].str.split("-", n=1, expand=True)
 
-    df_check = df[["ENV", "COSTCENTER", "DESC_KEY"]].dropna().drop_duplicates()
+    df_check = (
+        df[["ENV", "COSTCENTER", "DESC_KEY", "DESCRIPTION"]]
+        .dropna(subset=["COSTCENTER"])
+        .drop_duplicates()
+    )
     tmp = out.merge(
         df_check,
         left_on=["ENV", "Fallback_COSTCENTER"],
@@ -666,6 +714,27 @@ def cc_actions(
         "Nummer bestaat al in target voor andere omschrijving"
     )
 
+    out["Conflicting_Description"] = (
+        tmp["DESCRIPTION_TARGET"].where(collision, other="").fillna("").values
+    )
+
+    env_max = (
+        df.dropna(subset=["COSTCENTER"])
+        .assign(_num=pd.to_numeric(df.loc[df["COSTCENTER"].notna(), "COSTCENTER"], errors="coerce"))
+        .dropna(subset=["_num"])
+        .groupby("ENV")["_num"]
+        .max()
+        .rename("_env_max")
+    )
+    out = out.merge(env_max, on="ENV", how="left")
+    out["Suggested_Number"] = pd.NA
+    out.loc[collision, "Suggested_Number"] = (
+        (out.loc[collision, "_env_max"] + 1)
+        .map(lambda x: _as_int_or_str_no_decimal(x) if pd.notna(x) else pd.NA)
+    )
+    out = out.drop(columns=["_env_max"])
+
+    same_aligned = has_same_number & same_desc.fillna(False)
     out["Action"] = (
         out["ActionType"]
         + " in "
@@ -674,6 +743,15 @@ def cc_actions(
         + out["Fallback_COSTCENTER"].astype(str)
         + " and "
         + out["DESCRIPTION"].astype(str)
+    )
+    out.loc[same_aligned, "Action"] = (
+        "Verify alignment in "
+        + out.loc[same_aligned, "ENV"]
+        + " — cost center "
+        + out.loc[same_aligned, "Fallback_COSTCENTER"].astype(str)
+        + " already exists for '"
+        + out.loc[same_aligned, "DESCRIPTION"].astype(str)
+        + "'"
     )
 
     out = out.rename(
@@ -695,6 +773,8 @@ def cc_actions(
             "DESCRIPTION",
             "DESCRIPTION_LANG",
             "COSTCENTER",
+            "Conflicting_Description",
+            "Suggested_Number",
             "Action",
         ]
     ]

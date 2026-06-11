@@ -77,6 +77,66 @@ def test_gl_actions_create_vs_review(cfg):
     assert not actions.empty
     assert set(actions["ActionType"]).issubset({"Create", "Review"})
     assert "Action" in actions.columns
+    assert "Conflicting_Description" in actions.columns
+    assert "Suggested_Number" in actions.columns
+
+
+def test_gl_actions_collision_populates_conflicting_description(cfg):
+    # DESC_KEY "a" exists in L1-1 with account 1000.
+    # DESC_KEY "b" is missing from L1-1 but its canonical account (1000) is
+    # already used by "a" in L1-1 → genuine collision.
+    df = pd.DataFrame(
+        {
+            "DESCRIPTION": ["A", "B"],
+            "DESC_KEY": ["a", "b"],
+            "ENV": ["L1-1", "L2-2"],
+            "DATALIB": ["L1", "L2"],
+            "COMPANY": ["1", "2"],
+            "ACCOUNT": [1000, 1000],
+            "TYPE": ["T", "T"],
+            "DESCRIPTION_LANG": ["A long", "B long"],
+        }
+    )
+    bin_mat = pd.DataFrame(
+        {"L1-1": [1, 0], "L2-2": [0, 1]},
+        index=pd.Index(["a", "b"], name="DESC_KEY"),
+    )
+
+    actions = gl_actions(df, bin_mat, _logger(), cfg)
+
+    collision_rows = actions[actions["Reason"] == "Nummer bestaat al in target voor andere omschrijving"]
+    assert not collision_rows.empty
+    # "b" is missing from L1-1; account 1000 there belongs to "A"
+    b_in_l1 = collision_rows[collision_rows["ENV"] == "L1-1"]
+    assert not b_in_l1.empty
+    assert b_in_l1.iloc[0]["Conflicting_Description"] == "A"
+    assert pd.notna(b_in_l1.iloc[0]["Suggested_Number"])
+
+
+def test_gl_actions_aligned_action_text(cfg):
+    # Both ENVs have account 1000 for desc_key "a" — same number, same description.
+    df = pd.DataFrame(
+        {
+            "DESCRIPTION": ["A", "A"],
+            "DESC_KEY": ["a", "a"],
+            "ENV": ["L1-1", "L2-2"],
+            "DATALIB": ["L1", "L2"],
+            "COMPANY": ["1", "2"],
+            "ACCOUNT": [1000, 1000],
+            "TYPE": ["T1", "T2"],
+            "DESCRIPTION_LANG": ["A long", "A long"],
+        }
+    )
+    bin_mat = pd.DataFrame(
+        {"L1-1": [1], "L2-2": [0]},
+        index=pd.Index(["a"], name="DESC_KEY"),
+    )
+
+    actions = gl_actions(df, bin_mat, _logger(), cfg)
+
+    aligned_rows = actions[actions["Reason"] == "Nummer bestaat al in target voor dezelfde omschrijving"]
+    assert not aligned_rows.empty
+    assert "Verify TYPE" in aligned_rows.iloc[0]["Action"]
 
 
 def test_cc_actions_basic(cfg):
@@ -102,6 +162,8 @@ def test_cc_actions_basic(cfg):
     assert not actions.empty
     assert "ActionType" in actions.columns
     assert "Action" in actions.columns
+    assert "Conflicting_Description" in actions.columns
+    assert "Suggested_Number" in actions.columns
 
 
 def test_gl_number_and_type_mismatches():

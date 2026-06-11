@@ -53,6 +53,9 @@ class ConfigModel(BaseModel):
     dry_run: bool = False
     verbose: bool = False
 
+    column_map_gl: dict[str, str] = Field(default_factory=dict)
+    column_map_cc: dict[str, str] = Field(default_factory=dict)
+
     sheet_names_gl: dict[str, str] = Field(
         default_factory=lambda: {
             "Summary": "GL_RunSummary",
@@ -137,6 +140,9 @@ class Config:
     excel_engine: str = "xlsxwriter"
     dry_run: bool = False
     verbose: bool = False
+
+    column_map_gl: dict[str, str] = field(default_factory=dict)
+    column_map_cc: dict[str, str] = field(default_factory=dict)
 
     sheet_names_gl: dict[str, str] = field(
         default_factory=lambda: {

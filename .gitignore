@@ -6,6 +6,8 @@ output/
 data/costcenter_masterdata.xlsx
 data/general_ledger_masterdata.xlsx
 
+merge-spec-holdcos199.yaml
+
 .coverage
 .pytest_cache/
 .ruff_cache/
